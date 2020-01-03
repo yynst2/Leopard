@@ -63,7 +63,7 @@ def main():
     print('combining predictions from different models')
     for the_chr in chr_all:
         print(the_chr)
-        the_name = './output/pred_' + the_tf + '_' + the_test + '_' + the_chr
+        the_name = 'output/pred_' + the_tf + '_' + the_test + '_' + the_chr
         for i in np.arange(1,num_par + 1):
             for j in np.arange(len(models)):
                 _,the_train,the_vali,_ = models[j].split('/')[-1].split('_')

@@ -20,7 +20,7 @@ def crossentropy_cut(y_true,y_pred):
     y_true_f = K.flatten(y_true)
     y_pred_f = K.flatten(y_pred)
     y_pred_f= tf.clip_by_value(y_pred_f, 1e-7, (1. - 1e-7))
-    mask=K.greater_equal(y_true_f,-0.5)
+    mask=K.greater_equal(y_true_f,-0.5)   # the target is real values, and only consider part that's >-0.5 | probably need to check the distribution of the bigwig files
     losses = -(y_true_f * K.log(y_pred_f) + (1.0 - y_true_f) * K.log(1.0 - y_pred_f))
     losses = tf.boolean_mask(losses, mask)
     masked_loss = tf.reduce_mean(losses)

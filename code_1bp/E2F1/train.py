@@ -36,7 +36,7 @@ num_channel=6
 num_sample=100000
 batch_size=100
 
-path_computer='../../data/'
+path_computer='../data/'
 path1=path_computer + 'dna_bigwig/' # dna
 path2=path_computer + 'dnase_bigwig/' # dnase
 path3=path_computer + 'chipseq_conservative_refine_bigwig/' # label
@@ -64,7 +64,7 @@ cell_vali=args.validate
 par=args.partition 
 
 ## random seed for chr partition
-chr_train_all=['chr2','chr3','chr4','chr5','chr6','chr7','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr22','chrX']
+chr_train_all=['chr2','chr3','chr4','chr5','chr6','chr7','chr9','chr10','chr11','chr12','chr13','chr14','chr15','chr16','chr17','chr18','chr19','chr20','chr22','chrX']  # is chr1 only for showcase ??
 ratio=0.5
 np.random.seed(int(par))
 np.random.shuffle(chr_train_all)
@@ -119,7 +119,7 @@ feature_avg=pyBigWig.open(path2 + 'avg.bigwig')
 feature_train=pyBigWig.open(path2 + cell_train + '.bigwig')
 feature_vali=pyBigWig.open(path2 + cell_vali + '.bigwig')
 label_train=pyBigWig.open(path3 + the_tf + '_' + cell_train + '.bigwig')
-label_vali=pyBigWig.open(path3 + the_tf + '_' + cell_vali + '.bigwig')
+label_vali=pyBigWig.open(path3 + the_tf + '_' + cell_vali + '.bigwig')   # bigwig signal is real valued data and used in both input and target
 ############
 
 ##### augmentation parameters ######
@@ -192,14 +192,18 @@ def generate_data(batch_size, if_train):
 
 callbacks = [
     keras.callbacks.ModelCheckpoint(os.path.join('./', name_model),
-    save_weights_only=False,monitor='val_loss')
+    save_weights_only=False,
+    monitor='val_loss')
     ]
 
 model.fit_generator(
     generate_data(batch_size,True),
-    steps_per_epoch=int(num_sample // batch_size), nb_epoch=5,
+    steps_per_epoch=int(num_sample // batch_size),
+    nb_epoch=5,
     validation_data=generate_data(batch_size,False),
-    validation_steps=int(num_sample // batch_size),callbacks=callbacks,verbose=1)
+    validation_steps=int(num_sample // batch_size),
+    callbacks=callbacks,
+    verbose=1)
 
 for the_id in list_dna:
     dict_dna[the_id].close()

@@ -71,7 +71,7 @@ def main():
                     pred = np.load(the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy')
                 else:
                     pred += np.load(the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy')
-        pred = pred / float(len(models)) / float(num_par)
+        pred = pred / float(len(models)) / float(num_par) # averaged by models and model replications
         np.save(the_name, pred)
         # remove individual predictions from each model
         for i in np.arange(1,num_par + 1):

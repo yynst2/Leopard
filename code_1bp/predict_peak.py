@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import tensorflow as tf
 
-tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)  ## disable tf warning!
+#tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)  ## disable tf warning!
 stderr = sys.stderr  # disable printing "Using TensorFlow backend."
 sys.stderr = open(os.devnull, 'w')
 import keras
@@ -49,11 +49,9 @@ def get_args():
 args = get_args()
 
 path_computer = 'data/'
-path1 = path_computer + 'dna_bigwig/'       # dna
-# path2 = path_computer + 'dnase_bigwig/'     # dnase
-path4=  path_computer + 'peaks/'        # input data path
-
-
+path1 = path_computer + 'dna_bigwig/'                   # dna
+# path2 = path_computer + 'dnase_bigwig/'               # dnase
+path4=  os.path.join(path_computer,args.inputpath)      # input data path
 
 from keras.backend.tensorflow_backend import set_session
 
@@ -65,16 +63,14 @@ set_session(tf.Session(config=config))
 name_model = args.model
 the_tf = args.transcription_factor
 cell_test = args.test
-list_chr = args.chromosome
 
 model = unet.get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size)
 model.load_weights(name_model)
 # model.summary()
 
-
 test_data=np.load(os.path.join(path4,args.input))    # peak number * size * channel
 shape = np.shape(test_data)
-
+print('Number of predictions: {}'.format(shape[0]))
 if __name__ == '__main__':
 
     the_name = name_model.split('/')[-1].split('.')[0]
@@ -88,16 +84,3 @@ if __name__ == '__main__':
     if write_pred:
         os.system('mkdir -p output')
         np.save('./output/pred_' + the_tf + '_' + cell_test + '_Full_' + the_name, output)
-
-
-
-
-
-
-
-
-
-
-
-
-

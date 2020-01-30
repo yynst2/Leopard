@@ -59,20 +59,29 @@ def main():
                 ['-para', str(len(models))]
             cmd_all.append(cmd)
         procs = [ Popen(i) for i in cmd_all ]
+        #
+        for i in cmd_all:
+            print(i)
         for p in procs: # run in parallel
             p.wait()
 
     # stacking prediction from multiple models
     print('combining predictions from different models')
-
     the_name = './output/pred_' + the_tf + '_' + the_test + '_Full'
     for i in np.arange(1,num_par + 1):
         for j in np.arange(len(models)):
             _,the_train,the_vali,_ = models[j].split('/')[-1].split('_')
             if i==1 and j==0:
-                pred = np.load(the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy')
+                '''
+                pred_E2F1_HepG2_Full_weights_GM12878_HeLa-S3_1
+                '''
+                pred_file= the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy'
+                print(pred_file)
+                pred = np.load(pred_file)
             else:
-                pred += np.load(the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy')
+                pred_file = the_name + '_weights_' + the_train + '_' + the_vali + '_' + str(i) + '.npy'
+                print(pred_file)
+                pred += np.load(pred_file)
     pred = pred / float(len(models)) / float(num_par)
     np.save(the_name, pred)
     # remove individual predictions from each model

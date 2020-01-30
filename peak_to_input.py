@@ -22,10 +22,12 @@ class peakclass:
         if int(self.peak_center-0.5*peakclass.size)<0:
             self.padded_start= 0
             self.padded_end = int(self.padded_start + peakclass.size)
-        if int(self.peak_center+0.5*peakclass.size)>=chr_map[self.chr]:
-
+        elif int(self.peak_center+0.5*peakclass.size)>=chr_map[self.chr]:
             self.padded_end = chr_map[self.chr]
             self.padded_start = self.padded_end  -peakclass.size
+        else:
+            self.padded_start= int(self.peak_center - 0.5 * peakclass.size)
+            self.padded_end=self.padded_start+peakclass.size
 
         # features
         self.feature=[]   # 10240 * 6
@@ -106,6 +108,7 @@ else:
 print('total peak number: {}'.format(len(peakvec)))
 # get features
 for idx,i in enumerate(peakvec):
+    # print('handling : {} {} {} {}                                   '.format(idx,i.chr,i.start,i.end), end="\r")
     print('handling : {}'.format(idx), end="\r")
     i.derive_feature(list_dna,dict_dna,feature_avg,feature_test)
     peak_features.append(i.feature)

@@ -10,7 +10,7 @@ def get_args():
         help='transcript factor')
     parser.add_argument('-te', '--test', default='liver', type=str,
         help='test cell type')
-    parser.add_argument('-inputpath', '--inputpath', default='preloaded_features', type=str,
+    parser.add_argument('-inputpath', '--inputpath', default='peaks', type=str,
         help='preloaded input data path')
     parser.add_argument('-input', '--input', default='', type=str,
         help='preloaded input data for prediction')

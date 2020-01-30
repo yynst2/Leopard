@@ -48,10 +48,10 @@ def get_args():
 
 args = get_args()
 
-path_computer = '../data/'
+path_computer = 'data/'
 path1 = path_computer + 'dna_bigwig/'       # dna
 # path2 = path_computer + 'dnase_bigwig/'     # dnase
-path4=  path_computer + 'inputpath/'        # input data path
+path4=  path_computer + 'peaks/'        # input data path
 
 
 

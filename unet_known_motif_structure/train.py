@@ -13,7 +13,6 @@ import tensorflow as tf
 import keras
 import pandas as pd
 
-
 print('tf-' + tf.__version__, 'keras-' + keras.__version__)
 from keras.backend.tensorflow_backend import set_session
 
@@ -23,10 +22,10 @@ set_session(tf.Session(config=config))
 import random
 from datetime import datetime
 
-
-from .unet import *
 #
-from .motif import *
+sys.path.append('/users/PCCH0011/cch0017/PROJECTS/maxATAC/Leopard')  # change package path before training any model
+from unet_known_motif_structure.unet import *
+from unet_known_motif_structure.motif import *
 
 K.set_image_data_format('channels_last')  # TF dimension ordering in this code
 
@@ -51,7 +50,8 @@ path_computer = '../../data/'
 path1 = path_computer + 'dna_bigwig/'  # dna
 path2 = path_computer + 'dnase_bigwig/'  # dnase
 path3 = path_computer + 'chipseq_conservative_refine_bigwig/'  # label
-motif_path=path_computer+'known_motifs/'
+motif_path = path_computer + 'known_motifs/'
+
 
 # argv
 def get_args():
@@ -88,26 +88,28 @@ chr_set2 = chr_train_all[tmp:]
 print(chr_set1)
 print(chr_set2)
 
-
 # get known motif array for the corresponding TF, known motif array : [1, length, 4, motif #]
 
-known_motif_df=pd.read_csv(motif_path,header=0,sep='\t')
-known_motif_list=known_motif_df[known_motif_df['TF_Name']==args.tf].values
-known_motifs=motif.load_all_motifs_leopard(motif_path=motif_path+'pwms_2.00/',motif_list=known_motif_list,tf=args.tf)
-known_motif_array=motif.standardize_motifs(known_motifs)
-known_motif_array_shape=np.shape(known_motif_array)
+known_motif_df = pd.read_csv(os.path.join(motif_path, 'Cisbp200_TF_motifs'), header=0, sep='\t')
+known_motif_list = known_motif_df[known_motif_df['TF_Name'] == the_tf]['Motif_ID'].values
+known_motifs = motif.load_all_motifs_leopard(motif_path=os.path.join(motif_path, 'pwms_2.00'),
+											 motif_list=known_motif_list,
+											 tf=the_tf)
+if len(known_motifs) == 0:
+	print('cannot find PWMs for motif {}'.format(the_tf))
+known_motif_array = motif.standardize_motifs(known_motifs)
+known_motif_array_shape = np.shape(known_motif_array)
 
 name_model = 'weights_' + cell_train + '_' + cell_vali + '_' + par + '.h5'
-model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size, known_motif_array_shape=known_motif_array_shape)
-
-# insert known motifs and lock the kernel
-for i in model.layers:
-	if i.name.find('known_motif_scan') >= 0:
-		i.set_weights(known_motif_array)
-		i.trainable=False
+model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size,
+				 known_motif_array_shape=known_motif_array_shape,
+				 known_motif_array=known_motif_array,
+				 known_motif_layer_name='known_motif_scan',
+				 known_motif_trainable=False)
 
 # model.load_weights(name_model)
 # model.summary()
+
 
 ### random seed; use train cell for now
 # cell_all=['A549','GM12878','H1-hESC','HCT116','HeLa-S3','HepG2','IMR-90','induced_pluripotent_stem_cell','K562',
@@ -195,9 +197,9 @@ def generate_data(batch_size, if_train):
 			start = int(np.random.randint(0, chr_len[the_chr] - size, 1))
 			end = start + size
 
-			label = np.array(label_bw.values(the_chr, start, end))
+			label = np.array(label_bw.values(the_chr, start, end))     # 10240,
 
-			image = np.zeros((num_channel, size))
+			image = np.zeros((num_channel, size))  # image shape=[6, 10240]
 			num = 0
 			for k in np.arange(len(list_dna)):
 				the_id = list_dna[k]
@@ -219,20 +221,23 @@ def generate_data(batch_size, if_train):
 			b += 1
 
 		image_batch = np.array(image_batch)
-		label_batch = np.array(label_batch)
-		yield image_batch, label_batch
-
+		label_batch = np.array(label_batch)  # [sample, 10240], this can cause error?
+		yield image_batch, label_batch.reshape(batch_size, size, 1)  # [sample, 10240, 6], [sample, 10240, 1]
 
 callbacks = [
-	keras.callbacks.ModelCheckpoint(os.path.join('./', name_model),
-									save_weights_only=False, monitor='val_loss')
+	keras.callbacks.ModelCheckpoint(os.path.join('/', name_model),
+									save_weights_only=False,
+									monitor='val_loss')
 	]
 
 model.fit_generator(
 	generate_data(batch_size, True),
-	steps_per_epoch=int(num_sample // batch_size), nb_epoch=5,
+	steps_per_epoch=int(num_sample // batch_size),
+	nb_epoch=5,
 	validation_data=generate_data(batch_size, False),
-	validation_steps=int(num_sample // batch_size), callbacks=callbacks, verbose=1)
+	validation_steps=int(num_sample // batch_size),
+	callbacks=callbacks,
+	verbose=1)
 
 for the_id in list_dna:
 	dict_dna[the_id].close()

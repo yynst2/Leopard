@@ -1,4 +1,4 @@
-from .misc import *
+from unet_known_motif_structure.misc import *
 
 class motif(object):
 
@@ -84,6 +84,7 @@ class motif(object):
 		for i in motif_vec:
 			if i.length>=max_length:
 				max_length=i.length
+		print('max motif length: ',max_length)
 		tmp_container=[]
 		for i in motif_vec:
 			# forward
@@ -91,20 +92,17 @@ class motif(object):
 			for x in range(i.length):
 				for y in range(4):
 					tmp_matrix[x,y]=i.matrix[x,y]
-			tmp_matrix=tmp_matrix.reshape((max_length, 4, 1))
 			tmp_container.append(tmp_matrix)
 			# reverse
 			tmp_matrix = np.zeros(shape=(max_length, 4))
 			for x in range(i.length):
 				for y in range(4):
 					tmp_matrix[x, y] = i.r_matrix[x, y]
-			tmp_matrix=tmp_matrix.reshape((max_length, 4, 1))
 			tmp_container.append(tmp_matrix)
-		# zero padding
 		standardized_motifs=np.moveaxis(tmp_container,0,2)
 		standardized_motifs= standardized_motifs.reshape((1,max_length,4,matrix_size))
 
-		return standardized_motifs
+		return np.array(standardized_motifs)
 
 	def __eq__(self, other):
 		return other == self.motif_id

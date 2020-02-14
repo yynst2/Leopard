@@ -1,0 +1,10 @@
+Epoch 1/5
+1000/1000 [==============================] - 3599s 4s/step - loss: 0.1300 - dice_coef: 0.0145 - val_loss: 0.0129 - val_dice_coef: 0.1076
+Epoch 2/5
+1000/1000 [==============================] - 2110s 2s/step - loss: 0.0051 - dice_coef: 0.0774 - val_loss: 0.0043 - val_dice_coef: 0.1616
+Epoch 3/5
+1000/1000 [==============================] - 2216s 2s/step - loss: 0.0029 - dice_coef: 0.1449 - val_loss: 0.0036 - val_dice_coef: 0.2211
+Epoch 4/5
+1000/1000 [==============================] - 2238s 2s/step - loss: 0.0024 - dice_coef: 0.1967 - val_loss: 0.0033 - val_dice_coef: 0.2138
+Epoch 5/5
+1000/1000 [==============================] - 2244s 2s/step - loss: 0.0022 - dice_coef: 0.2248 - val_loss: 0.0037 - val_dice_coef: 0.2469

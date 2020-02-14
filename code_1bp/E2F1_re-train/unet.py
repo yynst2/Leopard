@@ -1,34 +1,20 @@
+from __future__ import print_function
+
 import os
 import sys
 import numpy as np
 from keras.models import Model
-from keras.layers import Input, concatenate, Conv1D, MaxPooling1D, Conv2DTranspose,Lambda,BatchNormalization
+from keras.layers import Input, concatenate, Conv1D, MaxPooling1D, Conv2DTranspose,Lambda,BatchNormalization,LSTM
 from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
+from keras.layers import ZeroPadding1D
+#import keras
 from keras import backend as K
-import keras
+
 K.set_image_data_format('channels_last')  # TF dimension ordering in this code
 
 ss=10
-
-
-def gelu(x):
-    """Gaussian Error Linear Unit.
-    This is a smoother version of the RELU.
-    Original paper: https://arxiv.org/abs/1606.08415
-    Args:
-        x: float Tensor to perform activation.
-    Returns:
-        `x` with the GELU activation applied.
-
-    from google BERT model
-
-    this could be useful as negative correction can be potentially found between PWMs
-    """
-    cdf = 0.5 * (1.0 + tf.tanh(
-        (np.sqrt(2 / np.pi) * (x + 0.044715 * tf.pow(x, 3)))))
-    return x * cdf
-
 
 def crossentropy_cut(y_true,y_pred):
     y_true_f = K.flatten(y_true)
@@ -68,31 +54,11 @@ def ucc(layer_in1,layer_in2, num_filter, size_kernel, activation='relu', padding
     x = BatchNormalization()(Conv1D(num_filter,size_kernel,activation=activation,padding=padding)(x))
     return x
 
-def get_unet(the_lr=1e-1,
-             num_class=2,
-             num_channel=10,
-             size=2048*25,
-             known_motif_array_shape=[],
-             known_motif_array=[],
-             known_motif_layer_name='known_motif_scan',
-             known_motif_trainable=False
-             ):
-    '''
-    :param the_lr:
-    :param num_class:
-    :param num_channel:
-    :param size:
-    :param known_motif_array_shape:
-    :param known_motif_array:
-    :param known_motif_layer_name:
-    :param known_motif_trainable:
-    :return:
-    '''
-    inputs = Input((size, num_channel))  # [sample, 10240, 6]
-    #inputs2=Input((size,num_channel-2))
+def get_unet(the_lr=1e-1, num_class=2, num_channel=10, size=2048*25):
+    inputs = Input((size, num_channel)) #
 #    print(inputs.shape)
 
-    num_blocks=5 
+    num_blocks=5 # 2^20 -> 2^8=256
     initial_filter=15
     scale_filter=1.5
     size_kernel=7
@@ -102,21 +68,11 @@ def get_unet(the_lr=1e-1,
     layer_down=[]
     layer_up=[]
 
+    conv0 = BatchNormalization()(Conv1D(initial_filter, size_kernel, \
+        activation=activation, padding=padding)(inputs))
+    conv0 = BatchNormalization()(Conv1D(initial_filter, size_kernel, \
+        activation=activation, padding=padding)(conv0))
 
-    inputs2=Lambda(lambda x: tf.slice(x,[0,0,0],[-1,-1,4]), name='DNA_slice')(inputs)
-
-    # first conv+bn
-    conv0 = BatchNormalization()(Conv1D(initial_filter, size_kernel,
-                                        activation=activation, padding=padding)(inputs))
-
-    # # known motif conv+bn
-    conv1 =Conv1D(filters=known_motif_array_shape[-1], kernel_size=known_motif_array_shape[1],
-           padding=padding,name='known_motif_scan',use_bias=False,activation=gelu)(inputs2)
-
-    # concat known motif into original layer
-    conv0 = keras.layers.concatenate(axis=-1, inputs=[conv0, conv1],name='concat_known_motif_results')
-
-    # second conv+bn
     layer_down.append(conv0)
     num=initial_filter
 
@@ -132,18 +88,10 @@ def get_unet(the_lr=1e-1,
         layer_up.append(the_layer)
 
     convn = Conv1D(num_class, 1, activation='sigmoid', padding=padding)(layer_up[-1])
-    # [sample, 10240, 14] -> [sample, 10240, 1]
 
     model = Model(inputs=[inputs], outputs=[convn])
 
-    # insert known motifs and lock the kernel
-    for i in model.layers:
-        if i.name.find(known_motif_layer_name) >= 0:
-            i.set_weights(known_motif_array)
-            i.trainable = known_motif_trainable
-
-    model.compile(optimizer=Adam(lr=the_lr,beta_1=0.9, beta_2=0.999,decay=1e-5), loss=crossentropy_cut,
-                  metrics=[dice_coef])
+    model.compile(optimizer=Adam(lr=the_lr,beta_1=0.9, beta_2=0.999,decay=1e-5), loss=crossentropy_cut, metrics=[dice_coef])
 
     return model
 

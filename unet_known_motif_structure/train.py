@@ -17,7 +17,7 @@ print('tf-' + tf.__version__, 'keras-' + keras.__version__)
 from keras.backend.tensorflow_backend import set_session
 
 config = tf.ConfigProto()
-config.gpu_options.per_process_gpu_memory_fraction = 0.45
+config.gpu_options.per_process_gpu_memory_fraction = 0.95
 set_session(tf.Session(config=config))
 import random
 from datetime import datetime
@@ -225,7 +225,7 @@ def generate_data(batch_size, if_train):
 		yield image_batch, label_batch.reshape(batch_size, size, 1)  # [sample, 10240, 6], [sample, 10240, 1]
 
 callbacks = [
-	keras.callbacks.ModelCheckpoint(os.path.join('/', name_model),
+	keras.callbacks.ModelCheckpoint(os.path.join('./', name_model),
 									save_weights_only=False,
 									monitor='val_loss')
 	]

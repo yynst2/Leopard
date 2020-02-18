@@ -1,0 +1,12 @@
+The goal of this branch is to train with known motifs and see if performance can be boosted.
+
+To do this, we'll train the following TFs without GM12878 involved cell line (in both training and validation), and only
+ along with seed=1 model versions.
+
+REST
+JUND
+CTCF
+
+The performance benchmark will be comparing original models trained under these settings and the new models with known
+motifs.
+

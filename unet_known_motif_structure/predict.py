@@ -89,7 +89,11 @@ known_motif_array = motif.standardize_motifs(known_motifs)
 known_motif_array_shape = np.shape(known_motif_array)
 
 model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size,
-				 known_motif_array_shape=known_motif_array_shape, known_motif_array=None)
+				 known_motif_array_shape=known_motif_array_shape,
+				 known_motif_array=known_motif_array,
+				 known_motif_layer_name='known_motif_scan',
+				 is_training=False,
+				 kernel_trainable=False)
 model.load_weights(name_model)
 # model.summary()
 

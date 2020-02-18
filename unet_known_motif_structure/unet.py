@@ -74,8 +74,9 @@ def get_unet(the_lr=1e-1,
              size=2048*25,
              known_motif_array_shape=[],
              known_motif_array=None,
+             is_training=True,
              known_motif_layer_name='known_motif_scan',
-             known_motif_trainable=False
+             kernel_trainable=False
              ):
     '''
     :param the_lr:
@@ -137,11 +138,11 @@ def get_unet(the_lr=1e-1,
     model = Model(inputs=[inputs], outputs=[convn])
 
     # insert known motifs and lock the kernel
-    if known_motif_array!=None:
+    if is_training==True:
         for i in model.layers:
             if i.name.find(known_motif_layer_name) >= 0:
                 i.set_weights(known_motif_array)
-                i.trainable = known_motif_trainable
+                i.trainable = kernel_trainable
 
     model.compile(optimizer=Adam(lr=the_lr,beta_1=0.9, beta_2=0.999,decay=1e-5), loss=crossentropy_cut,
                   metrics=[dice_coef])

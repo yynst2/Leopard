@@ -105,7 +105,8 @@ model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size,
 				 known_motif_array_shape=known_motif_array_shape,
 				 known_motif_array=known_motif_array,
 				 known_motif_layer_name='known_motif_scan',
-				 known_motif_trainable=False)
+				 is_training=True,
+				 kernel_trainable=False)
 
 # model.load_weights(name_model)
 # model.summary()

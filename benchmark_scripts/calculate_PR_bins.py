@@ -79,10 +79,13 @@ class PREDICTIONS_PR:
         self.random_Precision = (self.TOTAL_BINS_GS/int(args.IN_BINS))
 
         self.GS_df= GS_df[["BIN", "Score"]]
+        # chr:start-end<T>score
 
         self.GS_gb = self.GS_df.groupby(["BIN"]).count()
+        #
         
         self.GS_gb_index = self.GS_gb.index
+        # this index is chr:start-end
 
     def parse_PREDS(self):
         PREDS_df_columns = ["BIN_chr", "BIN_start", "BIN_stop", "Score"]
@@ -96,6 +99,7 @@ class PREDICTIONS_PR:
         self.PREDS_df["Score"] = self.PREDS_df["Score"].round(3)
 
         self.PREDS_UNIQUE_RANKS = self.PREDS_df["Score"].sort_values(ascending=False).unique()
+        # get all unique predicted sum scores (from high to low)
         
         self.PREDS_df.set_index("BIN", inplace=True)
 

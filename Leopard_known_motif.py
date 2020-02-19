@@ -34,7 +34,7 @@ def main():
 	the_reso = args.resolution
 
 	# list existing models
-	the_path = 'code_' + the_reso + '_no_GM12878_seed=1/' + the_tf + '/'
+	the_path = 'code_' + the_reso + '_known_motif/' + the_tf + '/'
 	models = glob.glob(the_path + 'weights_*1.h5')
 	_, the_train, the_vali, _ = models[0].split('/')[-1].split('_')
 	num_par = len(glob.glob(the_path + 'weights_' + the_train + '_' + the_vali + '_*.h5'))
@@ -53,7 +53,7 @@ def main():
 			_, the_train, the_vali, _ = models[j].split('/')[-1].split('_')
 			the_model = the_path + 'weights_' + the_train + '_' + the_vali + '_' + str(i) + '.h5'
 			print('model: ' + the_train + '_' + the_vali)
-			cmd = ['python', 'code_' + the_reso + '_no_GM12878_seed=1/predict.py', '-m', the_model, \
+			cmd = ['python', 'code_' + the_reso + '_known_motif/predict.py', '-m', the_model, \
 				   '-tf', the_tf, '-te', the_test, '-chr'] + chr_all + \
 				  ['-para', str(len(models))]
 			print(cmd)
@@ -66,7 +66,7 @@ def main():
 	print('combining predictions from different models')
 	for the_chr in chr_all:
 		print(the_chr)
-		the_name = 'output_no_GM12878_seed=1/pred_' + the_tf + '_' + the_test + '_' + the_chr
+		the_name = 'output_known_motif/pred_' + the_tf + '_' + the_test + '_' + the_chr
 		for i in np.arange(1, num_par + 1):
 			for j in np.arange(len(models)):
 				_, the_train, the_vali, _ = models[j].split('/')[-1].split('_')

@@ -23,7 +23,7 @@ import random
 from datetime import datetime
 
 #
-sys.path.append('/users/PCCH0011/cch0017/PROJECTS/maxATAC/Leopard')  # change package path before training any model
+sys.path.append('/fs/project/PCCH0011/CCHMC_PROJECT/maxATAC/Leopard')  # change package path before training any model
 from unet_known_motif_structure.unet import *
 from unet_known_motif_structure.motif import *
 

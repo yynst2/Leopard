@@ -8,7 +8,7 @@ import tensorflow as tf
 from keras import backend as K
 import keras
 K.set_image_data_format('channels_last')  # TF dimension ordering in this code
-
+K.set_floatx('float32')
 ss=10
 
 
@@ -76,7 +76,8 @@ def get_unet(the_lr=1e-1,
              known_motif_array=None,
              is_training=True,
              known_motif_layer_name='known_motif_scan',
-             kernel_trainable=False
+             kernel_trainable=False,
+             known_motif_thresholding=False,
              ):
     '''
     :param the_lr:
@@ -103,7 +104,6 @@ def get_unet(the_lr=1e-1,
     layer_down=[]
     layer_up=[]
 
-
     inputs2=Lambda(lambda x: tf.slice(x,[0,0,0],[-1,-1,4]), name='DNA_slice')(inputs)
 
     # first conv+bn
@@ -112,7 +112,22 @@ def get_unet(the_lr=1e-1,
 
     # # known motif conv+bn
     conv1 =Conv1D(filters=known_motif_array_shape[-1], kernel_size=known_motif_array_shape[1],
-           padding=padding,name='known_motif_scan',use_bias=False,activation=gelu)(inputs2)
+           padding=padding,name='known_motif_scan',use_bias=False,activation='linear')(inputs2)
+
+    if known_motif_thresholding:
+        # mark places wiht >70% threshold
+        _mask1 = keras.layers.Lambda(lambda x: tf.greater(x, 0.7))(conv1)
+        _mask1 = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask1)  # cast mask to float
+        # mark places with <-70% threshold
+        _mask2 = keras.layers.Lambda(lambda x: tf.less(x, -0.7))(conv1)
+        _mask2 = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask2)
+        # synthesized mask
+        _mask = keras.layers.Lambda(lambda x: tf.add(x, _mask2))(_mask1)
+        _mask = keras.layers.Lambda(lambda x: tf.greater(x, 0))(_mask)
+        _mask = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask)
+        # use leaky RELU so that negative information can be still used
+        conv1 = keras.layers.Lambda(lambda x: tf.multiply(x, _mask))(conv1)
+        conv1 = keras.layers.LeakyReLU(alpha=0.1)(conv1)
 
     # concat known motif into original layer
     conv0 = keras.layers.concatenate(axis=-1, inputs=[conv0, conv1],name='concat_known_motif_results')

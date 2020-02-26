@@ -2,7 +2,7 @@ from unet_known_motif_structure.misc import *
 
 class motif(object):
 
-	motif_path=''
+	motif_path = ''
 
 	def __init__(self):
 		self.length = 0
@@ -72,26 +72,26 @@ class motif(object):
 			motif_vec.append(m)
 		return motif_vec
 	@staticmethod
-	def standardize_motifs(motif_vec): # need test (todo)
+	def standardize_motifs(motif_vec):  # need test (todo)
 		'''
 		return zero padded motif vectors (including forward and reverse) for a list of known motifs
 		'''
 
 		# matrix size
-		matrix_size=2*int(len(motif_vec))  # including forward and reverse
+		matrix_size = 2 * int(len(motif_vec))  # including forward and reverse
 		# set max length
-		max_length=0
+		max_length = 0
 		for i in motif_vec:
-			if i.length>=max_length:
-				max_length=i.length
-		print('max motif length: ',max_length)
-		tmp_container=[]
+			if i.length >= max_length:
+				max_length = i.length
+		print('max motif length: ', max_length)
+		tmp_container = []
 		for i in motif_vec:
 			# forward
-			tmp_matrix=np.zeros(shape=(max_length,4))
+			tmp_matrix = np.zeros(shape=(max_length, 4))
 			for x in range(i.length):
 				for y in range(4):
-					tmp_matrix[x,y]=i.matrix[x,y]
+					tmp_matrix[x, y] = i.matrix[x, y]
 			tmp_container.append(tmp_matrix)
 			# reverse
 			tmp_matrix = np.zeros(shape=(max_length, 4))
@@ -99,8 +99,8 @@ class motif(object):
 				for y in range(4):
 					tmp_matrix[x, y] = i.r_matrix[x, y]
 			tmp_container.append(tmp_matrix)
-		standardized_motifs=np.moveaxis(tmp_container,0,2)
-		standardized_motifs= standardized_motifs.reshape((1,max_length,4,matrix_size))
+		standardized_motifs = np.moveaxis(tmp_container, 0, 2)
+		standardized_motifs = standardized_motifs.reshape((1, max_length, 4, matrix_size))
 
 		return np.array(standardized_motifs)
 

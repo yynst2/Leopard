@@ -1,4 +1,3 @@
-#!/home/hyangl/anaconda3/bin/python
 import pyBigWig
 import argparse
 import os
@@ -13,8 +12,11 @@ import keras
 
 sys.stderr = stderr
 from keras import backend as K
-import unet
-from util.auc import score_record, calculate_auc
+
+sys.path.append('/users/PCCH0011/cch0017/PROJECTS/maxATAC/Leopard')  # change package path before training any model
+from unet_known_motif_structure.unet import *
+from unet_known_motif_structure.motif import *
+from unet_known_motif_structure.util import *
 
 K.set_image_data_format('channels_last')  # TF dimension ordering in this code
 
@@ -38,11 +40,12 @@ chr_len = {}
 for i in np.arange(len(chr_all)):
 	chr_len[chr_all[i]] = num_bp[i]
 
-path_computer = 'data/'
+path_computer = './data/'
 # path1=path_computer
 # path2=path_computer
 path1 = path_computer + 'dna_bigwig/'  # dna
 path2 = path_computer + 'dnase_bigwig/'  # dnase
+motif_path = path_computer + 'known_motifs/'
 
 
 # argv
@@ -76,7 +79,22 @@ the_tf = args.transcription_factor
 cell_test = args.test
 list_chr = args.chromosome
 
-model = unet.get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size)
+known_motif_df = pd.read_csv(os.path.join(motif_path, 'Cisbp200_TF_motifs'), header=0, sep='\t')
+known_motif_list = known_motif_df[known_motif_df['TF_Name'] == the_tf]['Motif_ID'].values
+known_motifs = motif.load_all_motifs_leopard(motif_path=os.path.join(motif_path, 'pwms_2.00'),
+											 motif_list=known_motif_list,
+											 tf=the_tf)
+if len(known_motifs) == 0:
+	print('cannot find PWMs for motif {}'.format(the_tf))
+known_motif_array = motif.standardize_motifs(known_motifs)
+known_motif_array_shape = np.shape(known_motif_array)
+
+model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size,
+				 known_motif_array_shape=known_motif_array_shape,
+				 known_motif_array=known_motif_array,
+				 known_motif_layer_name='known_motif_scan',
+				 is_training=False,
+				 kernel_trainable=False)
 model.load_weights(name_model)
 # model.summary()
 
@@ -174,16 +192,3 @@ for the_id in list_dna:
 	dict_dna[the_id].close()
 feature_avg.close()
 feature_test.close()
-
-
-
-
-
-
-
-
-
-
-
-
-

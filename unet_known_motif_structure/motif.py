@@ -20,6 +20,7 @@ class motif(object):
 		df = pd.read_csv(file, header=0, index_col=0, sep='\t')
 		self.length = df.shape[0]
 		mat = df.values
+		mat=mat.astype('float32')
 		mat2 = copy.copy(mat)
 		max_value = 0.0
 		for i in range(df.shape[0]):
@@ -85,6 +86,7 @@ class motif(object):
 			if i.length >= max_length:
 				max_length = i.length
 		print('max motif length: ', max_length)
+		print('motif size: ', len(motif_vec))
 		tmp_container = []
 		for i in motif_vec:
 			# forward

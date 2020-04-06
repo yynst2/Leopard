@@ -75,19 +75,22 @@ def get_unet(the_lr=1e-1,
              known_motif_array_shape=[],
              known_motif_array=None,
              is_training=True,
-             known_motif_layer_name='known_motif_scan',
+             known_motif_layer_name='known_motif_initialized_scan',
              kernel_trainable=False,
              known_motif_thresholding=False,
              ):
     '''
+
     :param the_lr:
     :param num_class:
     :param num_channel:
     :param size:
     :param known_motif_array_shape:
     :param known_motif_array:
+    :param is_training:
     :param known_motif_layer_name:
-    :param known_motif_trainable:
+    :param kernel_trainable: not implemented
+    :param known_motif_thresholding: not implemented
     :return:
     '''
     inputs = Input((size, num_channel))  # [sample, 10240, 6]
@@ -95,42 +98,24 @@ def get_unet(the_lr=1e-1,
 #    print(inputs.shape)
 
     num_blocks=5 
-    initial_filter=15
+    initial_filter= known_motif_array_shape[-1] # known motif size
     scale_filter=1.5
-    size_kernel=7
+    size_kernel= known_motif_array_shape[1]    # (max length, 6)
     activation='relu'
     padding='same'    
 
     layer_down=[]
     layer_up=[]
 
-    inputs2=Lambda(lambda x: tf.slice(x,[0,0,0],[-1,-1,4]), name='DNA_slice')(inputs)
-
-    # first conv+bn
-    conv0 = BatchNormalization()(Conv1D(initial_filter, size_kernel,
-                                        activation=activation, padding=padding)(inputs))
-
-    # # known motif conv+bn
-    conv1 =Conv1D(filters=known_motif_array_shape[-1], kernel_size=known_motif_array_shape[1],
-           padding=padding,name='known_motif_scan',use_bias=False,activation='linear')(inputs2)
-
-    if known_motif_thresholding:
-        # mark places wiht >70% threshold
-        _mask1 = keras.layers.Lambda(lambda x: tf.greater(x, 0.7))(conv1)
-        _mask1 = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask1)  # cast mask to float
-        # mark places with <-70% threshold
-        _mask2 = keras.layers.Lambda(lambda x: tf.less(x, -0.7))(conv1)
-        _mask2 = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask2)
-        # synthesized mask
-        _mask = keras.layers.Lambda(lambda x: tf.add(x, _mask2))(_mask1)
-        _mask = keras.layers.Lambda(lambda x: tf.greater(x, 0))(_mask)
-        _mask = keras.layers.Lambda(lambda x: tf.cast(x, tf.float32))(_mask)
-        # use leaky RELU so that negative information can be still used
-        conv1 = keras.layers.Lambda(lambda x: tf.multiply(x, _mask))(conv1)
-        conv1 = keras.layers.LeakyReLU(alpha=0.1)(conv1)
-
-    # concat known motif into original layer
-    conv0 = keras.layers.concatenate(axis=-1, inputs=[conv0, conv1],name='concat_known_motif_results')
+    # first conv+bn, use known motifs
+    conv0 = BatchNormalization()(
+        Conv1D(initial_filter,
+               size_kernel,
+               activation=activation,
+               padding=padding,
+               name='known_motif_initialized_scan'
+               )(inputs)
+        )
 
     # second conv+bn
     layer_down.append(conv0)
@@ -156,8 +141,15 @@ def get_unet(the_lr=1e-1,
     if is_training==True:
         for i in model.layers:
             if i.name.find(known_motif_layer_name) >= 0:
-                i.set_weights(known_motif_array)
-                i.trainable = kernel_trainable
+                _weight=i.get_weights()   #
+                # _weight[0] shape : (max length, 6, size of kernel)
+                _shape=_weight[0].shape
+                known_motif_array= np.squeeze(known_motif_array)
+                for a in range(_shape[0]):
+                    for b in range(4):
+                        for c in range(_shape[2]):
+                            _weight[a][b][c]=known_motif_array[a][b][c]
+                i.set_weights(_weight)
 
     model.compile(optimizer=Adam(lr=the_lr,beta_1=0.9, beta_2=0.999,decay=1e-5), loss=crossentropy_cut,
                   metrics=[dice_coef])

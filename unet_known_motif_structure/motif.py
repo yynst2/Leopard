@@ -91,9 +91,11 @@ class motif(object):
 		for i in motif_vec:
 			# forward
 			tmp_matrix = np.zeros(shape=(max_length, 4))
+			# to get motif in the middle of the kernel
+			_starting_pos=max_length//2-i.length//2
 			for x in range(i.length):
 				for y in range(4):
-					tmp_matrix[x, y] = i.matrix[x, y]
+					tmp_matrix[_starting_pos+x, y] = i.matrix[x, y]
 			tmp_container.append(tmp_matrix)
 			# reverse
 			tmp_matrix = np.zeros(shape=(max_length, 4))

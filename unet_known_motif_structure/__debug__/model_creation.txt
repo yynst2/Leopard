@@ -1,0 +1,89 @@
+import pyBigWig
+import argparse
+import os
+import sys
+import numpy as np
+import re
+from keras.models import Model
+from keras.layers import Input, concatenate, Conv1D, MaxPooling1D, Conv2DTranspose, Lambda
+from keras.optimizers import Adam
+from keras.callbacks import ModelCheckpoint
+from keras import backend as K
+import tensorflow as tf
+import keras
+import pandas as pd
+
+print('tf-' + tf.__version__, 'keras-' + keras.__version__)
+from keras.backend.tensorflow_backend import set_session
+
+config = tf.ConfigProto()
+config.gpu_options.per_process_gpu_memory_fraction = 0.95
+set_session(tf.Session(config=config))
+import random
+from datetime import datetime
+
+#
+sys.path.append('/fs/project/PCCH0011/CCHMC_PROJECT/maxATAC/Leopard')  # change package path before training any model
+from unet_known_motif_structure.unet import *
+from unet_known_motif_structure.motif import *
+
+K.set_image_data_format('channels_last')  # TF dimension ordering in this code
+
+chr_all = ['chr1', 'chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr8', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13',
+		   'chr14', 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr21', 'chr22', 'chrX']
+num_bp = np.array(
+	[249250621, 243199373, 198022430, 191154276, 180915260, 171115067, 159138663, 146364022, 141213431, 135534747,
+	 135006516, 133851895, 115169878, 107349540, 102531392, 90354753, 81195210, 78077248, 59128983, 63025520, 48129895,
+	 51304566, 155270560])
+
+chr_len = {}
+for i in np.arange(len(chr_all)):
+	chr_len[chr_all[i]] = num_bp[i]
+
+size = 2 ** 11 * 5  # 10240
+num_channel = 6
+
+num_sample = 100000
+batch_size = 100
+
+path_computer = '../../data/'
+path1 = path_computer + 'dna_bigwig/'  # dna
+path2 = path_computer + 'dnase_bigwig/'  # dnase
+path3 = path_computer + 'chipseq_conservative_refine_bigwig/'  # label
+motif_path = path_computer + 'known_motifs/'
+
+
+the_tf = 'CTCF'
+cell_train = 'A549'
+cell_vali = 'H1-hESC'
+par = '1'
+
+chr_train_all = ['chr2', 'chr3', 'chr4', 'chr5', 'chr6', 'chr7', 'chr9', 'chr10', 'chr11', 'chr12', 'chr13', 'chr14',
+				 'chr15', 'chr16', 'chr17', 'chr18', 'chr19', 'chr20', 'chr22', 'chrX']
+ratio = 0.5
+np.random.seed(int(par))
+np.random.shuffle(chr_train_all)
+tmp = int(len(chr_train_all) * ratio)
+chr_set1 = chr_train_all[:tmp]
+chr_set2 = chr_train_all[tmp:]
+print(chr_set1)
+print(chr_set2)
+
+# get known motif array for the corresponding TF, known motif array : [1, length, 4, motif #]
+
+known_motif_df = pd.read_csv(os.path.join(motif_path, 'Cisbp200_TF_motifs'), header=0, sep='\t')
+known_motif_list = known_motif_df[known_motif_df['TF_Name'] == the_tf]['Motif_ID'].values
+known_motifs = motif.load_all_motifs_leopard(motif_path=os.path.join(motif_path, 'pwms_2.00'),
+											 motif_list=known_motif_list,
+											 tf=the_tf)
+
+known_motif_array = motif.standardize_motifs(known_motifs)
+known_motif_array_shape = np.shape(known_motif_array)
+
+name_model = 'weights_' + cell_train + '_' + cell_vali + '_' + par + '.h5'
+model = get_unet(the_lr=1e-3, num_class=1, num_channel=num_channel, size=size,
+				 known_motif_array_shape=known_motif_array_shape,
+				 known_motif_array=known_motif_array,
+				 known_motif_layer_name='known_motif_scan',
+				 is_training=True,
+				 kernel_trainable=False)

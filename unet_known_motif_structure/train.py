@@ -44,7 +44,7 @@ size = 2 ** 11 * 5  # 10240
 num_channel = 6
 
 num_sample = 100000
-batch_size = 100
+batch_size = 30
 
 path_computer = '../../data/'
 path1 = path_computer + 'dna_bigwig/'  # dna

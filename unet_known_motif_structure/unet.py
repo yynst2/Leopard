@@ -75,7 +75,7 @@ def get_unet(the_lr=1e-1,
              known_motif_array_shape=[],
              known_motif_array=None,
              is_training=True,
-             known_motif_layer_name='known_motif_initialized_scan',
+             known_motif_layer_name='known_motif_scan',
              kernel_trainable=False,
              known_motif_thresholding=False,
              ):
@@ -113,7 +113,7 @@ def get_unet(the_lr=1e-1,
                size_kernel,
                activation=activation,
                padding=padding,
-               name='known_motif_initialized_scan'
+               name='known_motif_scan'
                )(inputs)
         )
 
@@ -148,7 +148,7 @@ def get_unet(the_lr=1e-1,
                 for a in range(_shape[0]):
                     for b in range(4):
                         for c in range(_shape[2]):
-                            _weight[a][b][c]=known_motif_array[a][b][c]
+                            _weight[0][a][b][c]=known_motif_array[a][b][c]
                 i.set_weights(_weight)
 
     model.compile(optimizer=Adam(lr=the_lr,beta_1=0.9, beta_2=0.999,decay=1e-5), loss=crossentropy_cut,

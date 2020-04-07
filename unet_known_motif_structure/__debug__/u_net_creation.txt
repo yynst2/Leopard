@@ -1,0 +1,48 @@
+
+size=10240
+num_channel=6
+num_class = size
+
+inputs = Input((size, num_channel))  # [sample, 10240, 6]
+#inputs2=Input((size,num_channel-2))
+#    print(inputs.shape)
+
+num_blocks=5 
+initial_filter= known_motif_array_shape[-1] # known motif size
+scale_filter=1.5
+size_kernel= known_motif_array_shape[1]    # (max length, 6)
+activation='relu'
+padding='same'    
+
+layer_down=[]
+layer_up=[]
+
+# first conv+bn, use known motifs
+conv0 = BatchNormalization()(
+	Conv1D(initial_filter,
+		   size_kernel,
+		   activation=activation,
+		   padding=padding,
+		   name='known_motif_scan'
+		   )(inputs)
+	)
+
+# second conv+bn
+layer_down.append(conv0)
+num=initial_filter
+
+for i in range(num_blocks):
+	num=int(num * scale_filter)
+	the_layer=pcc(layer_down[i], num, size_kernel, activation=activation, padding=padding)
+	layer_down.append(the_layer)
+
+layer_up.append(the_layer)
+for i in range(num_blocks):
+	num=int(num / scale_filter)
+	the_layer=ucc(layer_up[i],layer_down[-(i+2)],num, size_kernel, activation=activation, padding=padding)
+	layer_up.append(the_layer)
+
+convn = Conv1D(num_class, 1, activation='sigmoid', padding=padding)(layer_up[-1])
+# [sample, 10240, 14] -> [sample, 10240, 1]
+
+model = Model(inputs=[inputs], outputs=[convn])
